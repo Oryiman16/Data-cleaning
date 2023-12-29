@@ -1,0 +1,31 @@
+-- Data cleaning exercise
+
+let
+    Source = Csv.Document(File.Contents("C:\Users\oryim\OneDrive\Documents\melb_data.csv"),[Delimiter=",", Columns=21, Encoding=1252, QuoteStyle=QuoteStyle.None]),
+    #"Promoted Headers" = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+    #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{{"Suburb", type text}, {"Address", type text}, {"Rooms", Int64.Type}, {"Type", type text}, {"Price", Int64.Type}, {"Method", type text}, {"SellerG", type text}, {"Date", type date}, {"Distance", type number}, {"Postcode", Int64.Type}, {"Bedroom2", Int64.Type}, {"Bathroom", Int64.Type}, {"Car", Int64.Type}, {"Landsize", Int64.Type}, {"BuildingArea", Int64.Type}, {"YearBuilt", Int64.Type}, {"CouncilArea", type text}, {"Lattitude", type number}, {"Longtitude", type number}, {"Regionname", type text}, {"Propertycount", Int64.Type}}),
+    #"Filtered Rows" = Table.SelectRows(#"Changed Type", each true),
+    #"Removed Columns" = Table.RemoveColumns(#"Filtered Rows",{"Propertycount"}),
+    #"Changed Type1" = Table.TransformColumnTypes(#"Removed Columns",{{"YearBuilt", type text}}),
+    #"Replaced Value" = Table.ReplaceValue(#"Changed Type1",null,"N/A",Replacer.ReplaceValue,{"YearBuilt"}),
+    #"Changed Type2" = Table.TransformColumnTypes(#"Replaced Value",{{"BuildingArea", type text}}),
+    #"Replaced Value1" = Table.ReplaceValue(#"Changed Type2",null,"N/A",Replacer.ReplaceValue,{"BuildingArea"}),
+    #"Filtered Rows1" = Table.SelectRows(#"Replaced Value1", each true),
+    #"Replaced Value2" = Table.ReplaceValue(#"Filtered Rows1","","N/A",Replacer.ReplaceValue,{"CouncilArea"}),
+    #"Changed Type3" = Table.TransformColumnTypes(#"Replaced Value2",{{"Car", type text}}),
+    #"Replaced Value3" = Table.ReplaceValue(#"Changed Type3","","N/A",Replacer.ReplaceValue,{"Car"}),
+    #"Filtered Rows2" = Table.SelectRows(#"Replaced Value3", each true),
+    #"Replaced Value4" = Table.ReplaceValue(#"Filtered Rows2","","N/A",Replacer.ReplaceValue,{"Car"}),
+    #"Replaced Value5" = Table.ReplaceValue(#"Replaced Value4","","",Replacer.ReplaceValue,{"Car"}),
+    #"Removed Columns1" = Table.RemoveColumns(#"Replaced Value5",{"Postcode"}),
+    #"Filtered Rows3" = Table.SelectRows(#"Removed Columns1", each true),
+    #"Removed Columns2" = Table.RemoveColumns(#"Filtered Rows3",{"Address"}),
+    #"Split Column by Delimiter" = Table.SplitColumn(Table.TransformColumnTypes(#"Removed Columns2", {{"Lattitude", type text}}, "en-NG"), "Lattitude", Splitter.SplitTextByEachDelimiter({"-"}, QuoteStyle.None, false), {"Lattitude.1", "Lattitude.2"}),
+    #"Changed Type4" = Table.TransformColumnTypes(#"Split Column by Delimiter",{{"Lattitude.1", type text}, {"Lattitude.2", type number}}),
+    #"Removed Columns3" = Table.RemoveColumns(#"Changed Type4",{"Lattitude.1"}),
+    #"Renamed Columns" = Table.RenameColumns(#"Removed Columns3",{{"Lattitude.2", "Lattitude"}}),
+    #"Filtered Rows4" = Table.SelectRows(#"Renamed Columns", each true),
+    #"Duplicated Column" = Table.DuplicateColumn(#"Filtered Rows4", "Price", "Price - Copy"),
+    #"Sorted Rows" = Table.Sort(#"Duplicated Column",{{"Price - Copy", Order.Ascending}})
+in
+    #"Sorted Rows"
